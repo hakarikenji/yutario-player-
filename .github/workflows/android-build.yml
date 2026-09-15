@@ -38,6 +38,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses (non-interactive)
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          fi
+          yes | "$SDKMANAGER" --licenses --sdk_root="$ANDROID_HOME" > /dev/null
+          echo "All Android SDK licenses accepted."
+
       - name: Add Capacitor Android platform
         run: |
           if [ ! -d android ]; then
