@@ -60,8 +60,11 @@ jobs:
       - name: Accept Android SDK licenses (non-interactive)
         shell: bash
         run: |
+          # `|| true` swallows the expected SIGPIPE from `yes` when sdkmanager
+          # closes stdin (runners use -o pipefail). Genuine license failures
+          # surface loudly in the SDK install step that follows.
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            --licenses --sdk_root="$ANDROID_HOME" > /dev/null
+            --licenses --sdk_root="$ANDROID_HOME" > /dev/null || true
           echo "All Android SDK licenses accepted."
 
       - name: Install SDK packages (platform 35 + build-tools)
