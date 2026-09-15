@@ -1,13 +1,22 @@
 name: Android Build
 
 # Builds the debug APK for Yutario Player:
-#   Bun install → Vite web build → Capacitor sync → Gradle assembleDebug
+#   Bun install → Vite web build → manual Android toolchain (licenses accepted
+#   non-interactively) → Capacitor sync → Gradle assembleDebug
 # Artifacts: app-debug.apk ( downloadable from the workflow run page )
+#
+# NOTE: android-actions/setup-android is intentionally NOT used — its built-in
+# license acceptance hangs on the interactive y/N prompt. We install
+# commandline-tools manually and accept every license with `yes |` ourselves.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+env:
+  # Pin the commandline-tools build (stable canonical URL from dl.google.com).
+  CMDLINE_TOOLS_URL: https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
 
 jobs:
   build-apk:
@@ -35,18 +44,32 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Android commandline-tools (manual, isolated SDK root)
+        shell: bash
+        run: |
+          SDK_ROOT="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL "$CMDLINE_TOOLS_URL" -o "$RUNNER_TEMP/clt.zip"
+          unzip -q "$RUNNER_TEMP/clt.zip" -d "$SDK_ROOT/cmdline-tools"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --version
 
       - name: Accept Android SDK licenses (non-interactive)
         shell: bash
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(command -v sdkmanager)"
-          fi
-          yes | "$SDKMANAGER" --licenses --sdk_root="$ANDROID_HOME" > /dev/null
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            --licenses --sdk_root="$ANDROID_HOME" > /dev/null
           echo "All Android SDK licenses accepted."
+
+      - name: Install SDK packages (platform 35 + build-tools)
+        shell: bash
+        run: |
+          sdkmanager --sdk_root="$ANDROID_HOME" \
+            "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+          sdkmanager --sdk_root="$ANDROID_HOME" --list_installed | head -8
 
       - name: Add Capacitor Android platform
         run: |
