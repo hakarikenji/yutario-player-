@@ -1,0 +1,68 @@
+name: Android Build
+
+# Builds the debug APK for Yutario Player:
+#   Bun install → Vite web build → Capacitor sync → Gradle assembleDebug
+# Artifacts: app-debug.apk ( downloadable from the workflow run page )
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web assets
+        run: bun run build
+
+      - name: Setup Java 21 (Capacitor 7 requirement)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Add Capacitor Android platform
+        run: |
+          if [ ! -d android ]; then
+            bunx cap add android
+          fi
+
+      - name: Sync Capacitor
+        run: bunx cap sync android
+
+      - name: Enforce compileSdk 35 (Capacitor 7 requirement)
+        run: |
+          cd android
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle
+          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle
+          grep -E 'compileSdkVersion|targetSdkVersion' variables.gradle
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yutario-player-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
