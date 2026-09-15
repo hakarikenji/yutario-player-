@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0A0A0C" />
+    <meta
+      name="description"
+      content="Yutario Player — ultra-premium music, karaoke and AI discovery. Built by Hakari Studio."
+    />
+    <title>Yutario Player — Premium Music, Karaoke & AI</title>
+    <link rel="preconnect" href="https://api.jamendo.com" />
+    <link rel="preconnect" href="https://usercontent.jamendo.com" />
+    <link rel="preconnect" href="https://prod-1.storage.jamendo.com" />
+    <script>
+      // Runtime config. scripts/dev.mjs swaps the client id when
+      // VITE_JAMENDO_CLIENT_ID is present; the built artifact stays valid
+      // with the public fallback so clean deploys never break.
+      window.__YUTARIO_CONFIG__ = { jamendoClientId: "dev-sandbox" };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
