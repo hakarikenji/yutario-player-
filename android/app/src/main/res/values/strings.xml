@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Yutario Player</string>
+    <string name="title_activity_main">Yutario Player</string>
+    <string name="package_name">com.hakaristudio.yutarioplayer</string>
+    <string name="custom_url_scheme">com.hakaristudio.yutarioplayer</string>
+</resources>

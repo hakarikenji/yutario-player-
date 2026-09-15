@@ -74,6 +74,44 @@ export class YutarioAudioEngine {
   private historySink: ((track: Track, msPlayed: number) => void) | null = null;
   private loadToken = 0;
 
+  /* ── background-audio resilience ── */
+  private bgHandlerRegistered = false;
+
+  /**
+   * Register a one-time visibilitychange listener that resumes the
+   * AudioContext and re-syncs MediaSession whenever the page becomes
+   * visible again.  Called automatically on first play/resume.
+   */
+  private ensureBgHandlers(): void {
+    if (this.bgHandlerRegistered) return;
+    this.bgHandlerRegistered = true;
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && this.ctx) {
+        // Browsers suspend the AudioContext when the tab is hidden;
+        // resume it so playback continues seamlessly.
+        if (this.ctx.state === "suspended") void this.ctx.resume();
+        // Re-push MediaSession metadata/state so the lock-screen
+        // notification stays accurate after a background/foreground cycle.
+        this.syncMediaSession();
+      }
+    });
+  }
+
+  /**
+   * Request notification permission on the first user-initiated play.
+   * Required on Android for the media notification (foreground service)
+   * to keep audio alive while the app is backgrounded.
+   */
+  private async ensureNotificationPermission(): Promise<void> {
+    try {
+      if (typeof Notification !== "undefined" && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+    } catch {
+      /* not available (e.g. plain browser without Notification API) */
+    }
+  }
+
   /* ── subscriptions ── */
 
   subscribe = (fn: Listener): (() => void) => {
@@ -167,6 +205,11 @@ export class YutarioAudioEngine {
 
     this.wireDeck(this.elA);
     this.wireDeck(this.elB);
+
+    // Background-audio resilience: resume context & re-sync MediaSession
+    // after background/foreground cycles (Android WebView lifecycle).
+    this.ensureBgHandlers();
+
     return ctx;
   }
 
@@ -469,6 +512,9 @@ export class YutarioAudioEngine {
 
     if (autoplay) {
       try {
+        // Ensure notification permission is granted so the foreground
+        // service notification keeps audio alive while backgrounded.
+        await this.ensureNotificationPermission();
         await el.play();
         if (token !== this.loadToken) return;
         this.patch({ state: "playing" });

@@ -22,6 +22,7 @@ import { useToast } from "./primitives";
 import { Artwork, SeekBar, VolumeSlider, EmptyState } from "./shared";
 import { Visualizer } from "./visualizer";
 import { Button, Chip, IconButton, Sheet } from "./primitives";
+import { useBackClose } from "../hooks/useBackClose";
 import { DetailSheet, type DetailState, type DetailActions } from "./DetailSheets";
 import { EQ_PRESETS, RATES, SLEEP_MINUTES } from "../lib/constants";
 import { music } from "../lib/music";
@@ -42,6 +43,9 @@ export function NowPlaying({ open, onClose, onKaraoke }: { open: boolean; onClos
   const track = status.track;
 
   const isFavorite = track ? library.isFavorite(track.id) : false;
+
+  // Hardware back closes the full-screen player (sheets register themselves).
+  useBackClose(!!open, "now-playing", onClose);
 
   /* Reset ephemeral views when the player closes. */
   useEffect(() => {
@@ -823,6 +827,8 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
 export function RewardedAdOverlay() {
   const ads = useAds();
   const r = ads.rewarded;
+  // Hardware back dismisses the ad overlay (never navigates away mid-ad).
+  useBackClose(!!r?.open, "rewarded-ad", ads.closeRewarded);
   if (!r?.open) return null;
   return (
     <AnimatePresence>

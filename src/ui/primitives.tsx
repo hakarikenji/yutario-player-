@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ButtonH
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn, uid } from "../lib/utils";
+import { useBackClose } from "../hooks/useBackClose";
 
 /* ─── Button ───────────────────────────────────────────────────────────── */
 
@@ -127,6 +128,8 @@ interface SheetProps {
 export function Sheet({ open, onClose, title, children, full, elevated }: SheetProps) {
   const scrimZ = elevated ? "z-[80]" : "z-40";
   const panelZ = elevated ? "z-[85]" : "z-50";
+  // Hardware/browser back closes the sheet (LIFO order) instead of leaving the app.
+  useBackClose(open, `sheet-${title ?? "anon"}`, onClose);
   return (
     <AnimatePresence>
       {open && (

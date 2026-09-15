@@ -75,13 +75,19 @@ export function JamendoHubPage() {
     fetcher
       .then((list) => {
         if (cancelled) return;
-        library.rememberTracks(list);
-        setTracks(list);
+        if (list.length > 0) {
+          library.rememberTracks(list);
+          setTracks(list);
+        } else {
+          // All providers returned empty (no key, CORS, network) →
+          // always show the synth demo vault so the page is never blank.
+          setTracks(getDemoTracks().slice(0, 12));
+        }
       })
       .catch(() => {
         if (cancelled) return;
-        // Invalid/missing key → empty (banner explains); network blip → demo vault.
-        setTracks(getJamendoClientId() ? getDemoTracks().slice(0, 12) : []);
+        // Unexpected error — still show demo vault instead of blank page.
+        setTracks(getDemoTracks().slice(0, 12));
       })
       .finally(() => !cancelled && setLoading(false));
     return () => {
