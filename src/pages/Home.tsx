@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ChevronRight, Plus, ListMusic, Clock, Smartphone, Trash2, Heart, Loader2, Music4, WifiOff,
+  FolderOpen, BellRing,
 } from "lucide-react";
 import { cn, formatTime } from "../lib/utils";
 import { music } from "../lib/music";
@@ -18,6 +19,7 @@ import { useLibrary } from "../state/library";
 import { PageContainer, HomeBannerAd } from "../ui/layout";
 import { Artwork } from "../ui/shared";
 import { Sheet, Button, useToast } from "../ui/primitives";
+import { ensureAudioReadPermission, requestNotificationPermission } from "../lib/nativePermissions";
 import type { Track } from "../lib/types";
 
 export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
@@ -73,6 +75,32 @@ export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
     player.playTracks(forYou, index);
   };
 
+  /* Connect the app to the phone's music files: ask for the audio permission
+   * first (Android 13+ READ_MEDIA_AUDIO prompt), then open the folder/file
+   * picker and index everything found. */
+  const connectPhoneFiles = async () => {
+    try {
+      const ok = await ensureAudioReadPermission();
+      if (!ok) {
+        toast("Audio access denied — allow it to scan your music", "error");
+        return;
+      }
+      await library.pickLocalFolder();
+    } catch {
+      /* user cancelled the picker */
+    }
+  };
+
+  /* One-tap media-notification setup so lock-screen controls & background
+   * audio keep working (native POST_NOTIFICATIONS prompt on Android 13+). */
+  const enableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    toast(
+      granted ? "Notifications on — media controls active" : "Notifications blocked in system settings",
+      granted ? "success" : "error"
+    );
+  };
+
   const createPlaylist = () => {
     const name = newPlName.trim();
     if (!name) return;
@@ -120,6 +148,26 @@ export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
         </div>
         <ChevronRight size={20} className="shrink-0 text-silver transition-transform group-active:translate-x-0.5" />
       </motion.button>
+
+      {/* Device connect actions — the primary way to pair the app with the
+          phone's own files, plus one-tap media-notification setup. */}
+      <div className="mb-7 grid grid-cols-2 gap-2.5">
+        <button
+          onClick={() => void connectPhoneFiles()}
+          disabled={library.indexing}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-aura-btn px-4 py-3.5 text-[14px] font-bold text-white shadow-cta transition-all hover:shadow-cta-lg active:scale-[0.97] disabled:opacity-50"
+        >
+          {library.indexing ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
+          {library.localTracks.length ? "Scan More Files" : "Connect Phone Files"}
+        </button>
+        <button
+          onClick={() => void enableNotifications()}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-aura-500/25 bg-aura-500/[0.08] px-4 py-3.5 text-[14px] font-bold text-aura-200 transition-all hover:border-aura-500/45 hover:bg-aura-500/[0.14] active:scale-[0.97]"
+        >
+          <BellRing size={16} />
+          Enable Notifications
+        </button>
+      </div>
 
       {/* YOUR PLAYLISTS */}
       <section className="mb-7">

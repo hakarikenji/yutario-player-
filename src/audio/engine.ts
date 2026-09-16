@@ -14,6 +14,8 @@ import { clamp } from "../lib/utils";
 import { ensureDemoUrl } from "../lib/demo";
 import { synthLyrics } from "../lib/lrc";
 import { VOICE_SUPPRESSION, CROSSFADE_CURVE } from "../lib/constants";
+import { Capacitor } from "@capacitor/core";
+import { requestNotificationPermission } from "../lib/nativePermissions";
 
 type Listener = () => void;
 
@@ -99,14 +101,15 @@ export class YutarioAudioEngine {
 
   /**
    * Request notification permission on the first user-initiated play.
-   * Required on Android for the media notification (foreground service)
-   * to keep audio alive while the app is backgrounded.
+   * On Android this routes through the native YutarioPermissions plugin
+   * (POST_NOTIFICATIONS on 13+) so the media notification can post and the
+   * foreground pipeline keeps audio alive while backgrounded. Web falls
+   * back to the browser Notification API. Never blocks playback on failure.
    */
   private async ensureNotificationPermission(): Promise<void> {
     try {
-      if (typeof Notification !== "undefined" && Notification.permission === "default") {
-        await Notification.requestPermission();
-      }
+      if (typeof Notification === "undefined" && !Capacitor.isNativePlatform()) return;
+      await requestNotificationPermission();
     } catch {
       /* not available (e.g. plain browser without Notification API) */
     }

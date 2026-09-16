@@ -19,6 +19,11 @@ import { useLibrary } from "../state/library";
 import { useAds } from "../state/ads";
 import { clearJamendoCache } from "../lib/jamendo";
 import { providerStatuses } from "../lib/music";
+import {
+  getNotificationPermissionState,
+  requestNotificationPermission,
+  openAppSettings,
+} from "../lib/nativePermissions";
 import { storageWipeAll, storageSizeEstimate } from "../lib/storage";
 import { PageContainer } from "../ui/layout";
 import { Button, Chip, IconButton, Sheet, useToast } from "../ui/primitives";
@@ -79,6 +84,18 @@ export function SettingsPage() {
   const ads = useAds();
   const toast = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
+  const [notifState, setNotifState] = useState<"granted" | "denied" | "default" | "unknown">("unknown");
+
+  /* Reflect the real OS notification-permission state (native or web). */
+  useEffect(() => {
+    let cancelled = false;
+    void getNotificationPermissionState().then((s) => {
+      if (!cancelled) setNotifState(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* Keep the library's stream-url resolver aligned with the bitrate setting. */
   useEffect(() => {
@@ -307,19 +324,31 @@ export function SettingsPage() {
         <Row
           icon={Bell}
           label="System Notifications"
-          sub="Media controls & playback toasts"
+          sub={
+            notifState === "granted"
+              ? "Granted — lock-screen media controls active"
+              : notifState === "denied"
+                ? "Blocked — enable in system settings to keep audio alive"
+                : "Media controls & playback toasts"
+          }
           right={
             <Button
               size="sm"
-              variant="ghost"
+              variant={notifState === "granted" ? "ghost" : "outline"}
               onClick={async () => {
-                if (!("Notification" in window)) return toast("Not supported here", "error");
-                const perm = await Notification.requestPermission();
-                update("notifications", perm === "granted");
-                toast(perm === "granted" ? "Notifications enabled" : "Permission denied", perm === "granted" ? "success" : "error");
+                if (notifState === "granted") return;
+                const granted = await requestNotificationPermission();
+                update("notifications", granted);
+                setNotifState(granted ? "granted" : "denied");
+                if (granted) {
+                  toast("Notifications enabled", "success");
+                } else {
+                  toast("Permission blocked — opening app settings", "error");
+                  setTimeout(() => void openAppSettings(), 600);
+                }
               }}
             >
-              {settings.notifications ? "Enabled" : "Enable"}
+              {notifState === "granted" ? "Enabled" : notifState === "denied" ? "Open Settings" : "Enable"}
             </Button>
           }
         />

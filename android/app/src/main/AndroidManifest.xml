@@ -38,4 +38,18 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Media playback keeps running with the app backgrounded/locked.
+         The audio engine runs a media notification; on Android 13+ the
+         notification itself needs POST_NOTIFICATIONS (requested at first
+         playback and from Settings → System Notifications). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- My Device explorer: index the phone's music files (MP3/M4A/…).
+         READ_MEDIA_AUDIO applies on Android 13+, READ_EXTERNAL_STORAGE below. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 </manifest>

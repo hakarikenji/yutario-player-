@@ -10,6 +10,7 @@ import { storageGet, storageSet } from "../lib/storage";
 import { readAudioMetadata, fileToTrack, probeDuration } from "../lib/id3";
 import { music } from "../lib/music";
 import { uid } from "../lib/utils";
+import { ensureAudioReadPermission } from "../lib/nativePermissions";
 
 const PLAYLISTS_KEY = "playlists";
 const FAVS_KEY = "favorites";
@@ -165,6 +166,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const pickLocalFolder = useCallback(async () => {
+    // Android: surface the READ_MEDIA_AUDIO / READ_EXTERNAL_STORAGE prompt
+    // before the picker opens so the scan actually finds the phone's files.
+    // Web: a no-op (pickers manage their own access).
+    try {
+      const ok = await ensureAudioReadPermission();
+      if (!ok) return; // user denied — don't open a picker that can't see files
+    } catch {
+      /* permission bridge missing on old builds — continue anyway */
+    }
     const w = window as unknown as {
       showDirectoryPicker?: (opts?: { mode?: "read" }) => Promise<FileSystemDirectoryHandle>;
     };
