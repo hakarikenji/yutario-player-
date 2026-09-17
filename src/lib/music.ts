@@ -222,8 +222,8 @@ export function providerStatuses(): import("./types").ProviderStatus[] {
     const configured = p.isConfigured() || !p.requiresKey;
     let reason: string | undefined;
     if (blocked) reason = "Disabled in settings";
-    else if (!p.browserEnabled) reason = "Not available in browser runtime";
-    else if (!configured) reason = "Needs an API key";
+    else if (!p.browserEnabled) reason = "Excluded — no CORS / derivative works";
+    else if (!configured) reason = "Studio key not active — streaming via Archive.org";
     return {
       id: p.id,
       displayName: p.displayName,

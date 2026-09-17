@@ -297,11 +297,26 @@ export function SettingsPage() {
           />
         ))}
         <div className="border-t border-white/[0.06] px-4 py-3">
-          <p className="text-[11px] leading-relaxed text-silver-dim">
-            Never included: YouTube, Spotify, Deezer or any scraped/re-hosted
-            source; remixes, covers, sped-up/slowed/nightcore edits; tracks
-            without license metadata. Every catalog track is screened by the
-            licensing &amp; quality gate before it reaches you.
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-silver-dim">
+            Sources
+          </p>
+          {providerStatuses()
+            .filter((p) => p.enabled || p.id === "archive")
+            .map((p) => (
+              <div key={p.id} className="flex items-center gap-2 py-1">
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-aura-500/70" />
+                <span className="text-[11px] font-semibold text-silver">
+                  {p.displayName}
+                </span>
+                <span className="text-[10px] text-silver-dim">
+                  · {p.trackCountHint ?? "Active"} · CC licensed
+                </span>
+              </div>
+            ))}
+          <p className="mt-2 text-[9px] leading-snug text-silver-dim/60">
+            Never scraped or re-hosted — only tracks with explicit Creative
+            Commons or equivalent license metadata. No YouTube, Spotify, or
+            Deezer content.
           </p>
         </div>
       </Section>
