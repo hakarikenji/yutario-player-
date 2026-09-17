@@ -6,7 +6,7 @@ import { type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Home, Mic2, Bot, Settings2, Play, Pause, SkipForward, SkipBack, Smartphone, Radio, Compass, ListMusic } from "lucide-react";
 import { cn } from "../lib/utils";
-import { t } from "../lib/i18n";
+import { t, useT } from "../lib/i18n";
 import { usePlayer } from "../state/player";
 import { useSettings } from "../state/settings";
 import { Artwork } from "./shared";
@@ -36,6 +36,7 @@ export function AuraBackdrop() {
 }
 
 export function BottomNav({ tab, onTab }: { tab: TabKey; onTab: (t: TabKey) => void }) {
+  useT(); // re-render on language change
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-ink-100/85 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-1.5 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5">

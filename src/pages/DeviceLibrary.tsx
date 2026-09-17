@@ -11,7 +11,7 @@ import {
   Clock, ArrowDownUp, X, Disc3, Mic2, ChevronLeft, RefreshCw, FileMusic, ScanLine,
 } from "lucide-react";
 import { cn, formatTime } from "../lib/utils";
-import { t } from "../lib/i18n";
+import { t, useT } from "../lib/i18n";
 import { usePlayer } from "../state/player";
 import { useLibrary } from "../state/library";
 import { PageContainer } from "../ui/layout";
@@ -32,6 +32,7 @@ const SORTS: { key: SortMode; label: string }[] = [
 ];
 
 export function DeviceLibraryPage({ onBack }: { onBack?: () => void }) {
+  useT(); // re-render on language change
   const player = usePlayer();
   const library = useLibrary();
   const toast = useToast();

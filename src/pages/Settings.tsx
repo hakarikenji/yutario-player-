@@ -10,7 +10,7 @@ import {
   Archive, Music2,
 } from "lucide-react";
 import { cn, formatBytes, relativeTime } from "../lib/utils";
-import { t } from "../lib/i18n";
+import { t, useT } from "../lib/i18n";
 import { BUILD, BITRATE_OPTIONS, LEGAL_LINKS, VOICE_SUPPRESSION } from "../lib/constants";
 import { LANGUAGES } from "../lib/i18n";
 import { useSettings } from "../state/settings";
@@ -78,6 +78,7 @@ function Row({
 }
 
 export function SettingsPage() {
+  useT(); // re-render on language change
   const { settings, update, reset: resetSettings } = useSettings();
   const auth = useAuth();
   const library = useLibrary();
@@ -123,7 +124,7 @@ export function SettingsPage() {
       </div>
 
       {/* Profile center */}
-      <Section title="Profile">
+      <Section title={t("settings_profile")}>
         {auth.user ? (
           <>
             <div className="flex items-center gap-3 px-4 py-4">
@@ -247,25 +248,24 @@ export function SettingsPage() {
       </Section>
 
       {/* Music sources & licensing */}
-      <Section title="Music Sources & Licensing">
+      <Section title={t("settings_sources")}>
         <div className="border-b border-white/[0.06] px-4 py-4">
-          <p className="text-sm font-bold text-white">Licensing mode</p>
+          <p className="text-sm font-bold text-white">{t("licensing_mode")}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-silver">
-            Commercial mode only admits tracks whose license explicitly permits
-            monetized use — nothing is ever guessed.
+            {t("licensing_sub")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Chip
               active={settings.licensingMode === "noncommercial"}
               onClick={() => update("licensingMode", "noncommercial")}
             >
-              Personal use
+              {t("personal_use")}
             </Chip>
             <Chip
               active={settings.licensingMode === "commercial"}
               onClick={() => update("licensingMode", "commercial")}
             >
-              Commercial & monetized
+              {t("commercial_mode")}
             </Chip>
           </div>
         </div>
@@ -298,7 +298,7 @@ export function SettingsPage() {
         ))}
         <div className="border-t border-white/[0.06] px-4 py-3">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-silver-dim">
-            Sources
+            {t("settings_sources")}
           </p>
           {providerStatuses()
             .filter((p) => p.enabled || p.id === "archive")
@@ -309,21 +309,19 @@ export function SettingsPage() {
                   {p.displayName}
                 </span>
                 <span className="text-[10px] text-silver-dim">
-                  · {p.trackCountHint ?? "Active"} · CC licensed
+                  · {t("source_active")} · {t("source_cc")}
                 </span>
               </div>
             ))}
           <p className="mt-2 text-[9px] leading-snug text-silver-dim/60">
-            Never scraped or re-hosted — only tracks with explicit Creative
-            Commons or equivalent license metadata. No YouTube, Spotify, or
-            Deezer content.
+            {t("sources_note")}
           </p>
         </div>
       </Section>
 
       {/* Appearance */}
       <Section title={t("settings_appearance")}>
-        <Row icon={Moon} label="Dark Mode" sub="Cursed-aura theme (always on brand)" right={<Toggle on={settings.darkMode} onChange={(on) => update("darkMode", on)} />} />
+        <Row icon={Moon} label={t("dark_mode")} sub="Cursed-aura theme (always on brand)" right={<Toggle on={settings.darkMode} onChange={(on) => update("darkMode", on)} />} />
       </Section>
 
       {/* Language */}
@@ -341,14 +339,8 @@ export function SettingsPage() {
       <Section title={t("settings_notifications")}>
         <Row
           icon={Bell}
-          label="System Notifications"
-          sub={
-            notifState === "granted"
-              ? "Granted — lock-screen media controls active"
-              : notifState === "denied" && notifRequested
-                ? "Blocked — enable in system settings to keep audio alive"
-                : "Enable for lock-screen media controls & background audio"
-          }
+          label={t("system_notifications")}
+          sub={t("notifications_sub")}
           right={
             <Button
               size="sm"
@@ -370,7 +362,7 @@ export function SettingsPage() {
                 }
               }}
             >
-              {notifState === "granted" ? "Enabled" : notifState === "denied" && notifRequested ? "Open Settings" : "Enable"}
+              {notifState === "granted" ? t("notifications_enabled") : notifState === "denied" && notifRequested ? "Open Settings" : t("notifications_enable")}
             </Button>
           }
         />
@@ -380,7 +372,7 @@ export function SettingsPage() {
       <Section title={t("settings_storage")}>
         <Row
           icon={Database}
-          label="App Cache"
+          label={t("app_cache")}
           sub={`≈ ${formatBytes(storageSizeEstimate())} · responses, history, playlists`}
         />
         <Row
@@ -389,7 +381,7 @@ export function SettingsPage() {
           sub={library.localTracks.length ? `${library.localTracks.length} tracks · 100% offline` : "Tap to scan your phone's music"}
           onClick={() => void library.pickLocalFolder()}
         />
-        <Row icon={Trash2} label="Clear Streaming Cache" danger onClick={() => { clearJamendoCache(); toast("Streaming cache cleared", "success"); }} />
+        <Row icon={Trash2} label={t("clear_cache")} danger onClick={() => { clearJamendoCache(); toast("Streaming cache cleared", "success"); }} />
         <Row
           icon={Trash2}
           label="Remove Indexed Device Files"
@@ -414,12 +406,12 @@ export function SettingsPage() {
         </div>
         <Row
           icon={ShieldCheck}
-          label="Terms of Service"
+          label={t("terms")}
           onClick={() => window.open(LEGAL_LINKS.terms, "_blank", "noopener")}
         />
         <Row
           icon={ShieldCheck}
-          label="Privacy Policy"
+          label={t("privacy")}
           onClick={() => window.open(LEGAL_LINKS.privacy, "_blank", "noopener")}
         />
         <Row
@@ -429,13 +421,13 @@ export function SettingsPage() {
         />
         <Row
           icon={Trash2}
-          label="Nuclear Reset"
-          sub="Wipe every cache, setting, session & index"
+          label={t("reset_all")}
+          sub={t("reset_sub")}
           danger
           onClick={() => setConfirmReset(true)}
         />
         <div className="px-4 py-3 text-center">
-          <p className="text-[10px] text-silver-dim">{BUILD.copyright} · Music by Jamendo artists under CC licenses</p>
+          <p className="text-[10px] text-silver-dim">{BUILD.copyright} · {t("sources_note")}</p>
         </div>
       </Section>
 

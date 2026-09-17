@@ -13,7 +13,7 @@ import {
   X, FileMusic, ChevronRight, ShieldCheck,
 } from "lucide-react";
 import { cn, formatTime } from "../lib/utils";
-import { t } from "../lib/i18n";
+import { t, useT } from "../lib/i18n";
 import { usePlayer } from "../state/player";
 import { useSettings } from "../state/settings";
 import { useLibrary } from "../state/library";
@@ -30,6 +30,7 @@ import { synthLyrics, activeLyricIndex } from "../lib/lrc";
 import type { LrcLine, Track } from "../lib/types";
 
 export function NowPlaying({ open, onClose, onKaraoke }: { open: boolean; onClose: () => void; onKaraoke: () => void }) {
+  useT(); // re-render on language change
   const player = usePlayer();
   const { settings, update, setEqBand, applyPreset, setEqEnabled } = useSettings();
   const library = useLibrary();

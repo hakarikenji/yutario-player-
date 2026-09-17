@@ -6,14 +6,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Play, Shuffle, Search, Radio, Flame, Loader2, KeyRound,
-  CheckCircle2, AlertTriangle, ArrowRight, ExternalLink, Sparkles, Info,
+  Play, Shuffle, Search, Radio, Flame, Loader2,
+  CheckCircle2, AlertTriangle, Sparkles,
 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { t } from "../lib/i18n";
-import {
-  getJamendoHealth, subscribeJamendoHealth, getJamendoClientId, clearJamendoCache,
-} from "../lib/jamendo";
+import { t, useT } from "../lib/i18n";
 import { music } from "../lib/music";
 import { getDemoTracks } from "../lib/demo";
 import { STAFF_PICKS } from "../lib/curated";
@@ -21,7 +18,7 @@ import { usePlayer } from "../state/player";
 import { useSettings } from "../state/settings";
 import { useLibrary } from "../state/library";
 import { PageContainer } from "../ui/layout";
-import { Button, Chip, SectionHeader, Sheet, Skeleton, useToast } from "../ui/primitives";
+import { Button, Chip, SectionHeader, Skeleton, useToast } from "../ui/primitives";
 import { Artwork, TrackRow, AlbumCard, EmptyState } from "../ui/shared";
 import { DetailSheet, type DetailState, type DetailActions } from "../ui/DetailSheets";
 import type { Track } from "../lib/types";
@@ -45,6 +42,7 @@ const CHANNELS: Channel[] = [
 ];
 
 export function JamendoHubPage() {
+  useT(); // re-render on language change
   const player = usePlayer();
   const { settings } = useSettings();
   const library = useLibrary();
@@ -57,16 +55,10 @@ export function JamendoHubPage() {
   const [searchResults, setSearchResults] = useState<Track[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [detail, setDetail] = useState<DetailState | null>(null);
-  const [keySheet, setKeySheet] = useState(false);
-  const [keyInput, setKeyInput] = useState("");
   const [fetchVersion, setFetchVersion] = useState(0);
-  const [health, setHealth] = useState(getJamendoHealth());
   const [staffTracks, setStaffTracks] = useState<Track[]>([]);
   const searchTimer = useRef<number | null>(null);
 
-  useEffect(() => subscribeJamendoHealth(setHealth), []);
-
-  /* Load staff picks on mount */
   useEffect(() => {
     let cancelled = false;
     // Pick 3 random curated artists to feature
@@ -181,61 +173,22 @@ export function JamendoHubPage() {
     return [...map.values()].slice(0, 12);
   }, [activeTracks]);
 
-  const saveKey = () => {
-    // Keys are provisioned by Hakari Studio at build time — listeners never
-    // enter them. The sheet is a read-only connection status panel now.
-    clearJamendoCache();
-    setKeySheet(false);
-    setFetchVersion((v) => v + 1);
-    toast(getJamendoClientId() ? "Reconnecting with the built-in catalog key…" : "Reconnecting via Archive.org…", "info");
-  };
-
   return (
     <PageContainer>
-      {/* Header with live connection status */}
+      {/* Header */}
       <div className="flex items-end justify-between px-1 pb-3 pt-4">
         <div>
-          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-aura-400">
-            <Sparkles size={11} /> Jamendo Hub
-          </p>
-          <h1 className="text-xl font-black tracking-tight text-white">Discover free music</h1>
+          <h1 className="text-xl font-black tracking-tight text-white">{t("discover_title")}</h1>
+          <p className="text-xs text-silver">{t("discover_sub")}</p>
         </div>
         <button
-          onClick={() => setKeySheet(true)}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold transition-all active:scale-95",
-            health.ok === true && "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-            health.ok === false && "border-red-500/40 bg-red-500/10 text-red-300",
-            health.ok === null && "border-white/10 bg-white/[0.04] text-silver"
-          )}
-          title={health.message}
+          onClick={() => setFetchVersion((v) => v + 1)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-silver transition-all active:scale-95"
+          title="Refresh"
         >
-          {health.ok === true ? (
-            <CheckCircle2 size={12} />
-          ) : health.ok === false ? (
-            <AlertTriangle size={12} />
-          ) : (
-            <Loader2 size={12} className="animate-spin" />
-          )}
-          {health.ok === true ? "Live API" : health.ok === false ? "Key needed" : "…"}
+          <Loader2 size={13} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
-
-      {/* Status banner when the built-in Jamendo key can't serve */}
-      {health.ok === false && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left"
-        >
-          <KeyRound size={18} className="shrink-0 text-silver" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-white">Jamendo catalog paused</span>
-            <span className="block text-xs text-silver">Streaming continues via Archive.org originals — nothing for you to set up.</span>
-          </span>
-          <ArrowRight size={15} className="shrink-0 text-silver-dim" />
-        </motion.div>
-      )}
 
       {/* Search */}
       <div className="relative mb-4">
@@ -243,7 +196,7 @@ export function JamendoHubPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search popular free tracks…"
+          placeholder={t("discover_search")}
           className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] pl-11 pr-10 text-sm font-medium text-white placeholder:text-silver-dim focus:border-aura-500/50 focus:outline-none focus:ring-2 focus:ring-aura-500/20"
         />
         {searching && <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-aura-400" />}
@@ -423,94 +376,7 @@ export function JamendoHubPage() {
         </>
       )}
 
-      {/* Attribution footer */}
-      <div className="mb-4 flex items-center justify-center gap-2 rounded-3xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-        <Info size={14} className="shrink-0 text-silver-dim" />
-        <p className="text-center text-[11px] leading-relaxed text-silver">
-          Multi-source: every track passes the licensing gate — CC metadata
-          verified, originals only (remixes/covers/nightcore excluded) — via{" "}
-          <a
-            href="https://developer.jamendo.com"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-0.5 font-semibold text-aura-400 hover:text-aura-300"
-          >
-            Jamendo <ExternalLink size={10} />
-          </a>{" "}
-          +{" "}
-          <a
-            href="https://archive.org/details/netlabels"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-0.5 font-semibold text-aura-400 hover:text-aura-300"
-          >
-            Archive.org netlabels <ExternalLink size={10} />
-          </a>
-        </p>
-      </div>
-
       <DetailSheet detail={detail} onClose={() => setDetail(null)} actions={detailActions} />
-
-      {/* Connection status sheet (read-only — keys are operator-managed) */}
-      <Sheet open={keySheet} onClose={() => setKeySheet(false)} title="Music Sources">
-        <KeySheetBody
-          value={keyInput}
-          onValue={setKeyInput}
-          onSave={saveKey}
-          onCancel={() => setKeySheet(false)}
-        />
-      </Sheet>
     </PageContainer>
-  );
-}
-
-function KeySheetBody({
-  onSave,
-  onCancel,
-}: {
-  value: string;
-  onValue: (v: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
-  const current = getJamendoClientId();
-  return (
-    <div className="space-y-4 pb-2">
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-        <p className="text-sm font-bold text-white">Catalogs are managed for you</p>
-        <p className="mt-1 text-xs leading-relaxed text-silver">
-          Yutario connects to Jamendo and Archive.org with keys provisioned by
-          Hakari Studio — there is nothing to sign up for or paste. If a
-          catalog is ever paused, the app streams from the remaining sources
-          automatically.
-        </p>
-      </div>
-      <div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-        <div>
-          <p className="text-sm font-bold text-white">Jamendo</p>
-          <p className="text-[11px] text-silver">500,000+ Creative Commons originals</p>
-        </div>
-        {current ? (
-          <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black tracking-wider text-emerald-300">CONNECTED</span>
-        ) : (
-          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black tracking-wider text-silver">STANDBY</span>
-        )}
-      </div>
-      <div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-        <div>
-          <p className="text-sm font-bold text-white">Archive.org Netlabels</p>
-          <p className="text-[11px] text-silver">Original netlabel releases, CC-licensed</p>
-        </div>
-        <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black tracking-wider text-emerald-300">CONNECTED</span>
-      </div>
-      <div className="flex gap-2">
-        <Button variant="ghost" className="flex-1" onClick={onCancel}>
-          Close
-        </Button>
-        <Button className="flex-1" onClick={onSave}>
-          <CheckCircle2 size={15} /> Reconnect
-        </Button>
-      </div>
-    </div>
   );
 }

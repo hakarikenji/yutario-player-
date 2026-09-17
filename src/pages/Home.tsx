@@ -12,7 +12,7 @@ import {
 import { cn, formatTime } from "../lib/utils";
 import { music } from "../lib/music";
 import { getDemoTracks, isOfflineLikely } from "../lib/demo";
-import { t } from "../lib/i18n";
+import { t, useT } from "../lib/i18n";
 import { usePlayer } from "../state/player";
 import { useSettings } from "../state/settings";
 import { useLibrary } from "../state/library";
@@ -23,6 +23,7 @@ import { requestNotificationPermission } from "../lib/nativePermissions";
 import type { Track } from "../lib/types";
 
 export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
+  useT(); // re-render on language change
   const player = usePlayer();
   const { settings } = useSettings();
   const library = useLibrary();

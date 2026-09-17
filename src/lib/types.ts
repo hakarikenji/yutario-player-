@@ -175,7 +175,7 @@ export type AudioOutputMode = "auto" | "speaker" | "headphones";
 
 /* ─── Settings ─────────────────────────────────────────────────────────── */
 
-export type LangKey = "en" | "es" | "ja" | "pt" | "fr";
+export type LangKey = "en" | "ar" | "es" | "ja" | "pt" | "fr";
 
 export interface AppSettings {
   darkMode: boolean;

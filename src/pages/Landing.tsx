@@ -33,7 +33,7 @@ const FEATURES = [
   },
   {
     icon: Radio,
-    title: "Jamendo Discovery",
+    title: "Free Music Discovery",
     body: "Trending charts, smart moods, artist & album matrices — all Creative Commons, all streamable.",
   },
   {
@@ -82,7 +82,7 @@ export function LandingPage({ onEnter }: { onEnter: () => void }) {
               <span className="bg-gradient-to-r from-aura-300 via-aura-500 to-aura-700 bg-clip-text text-transparent"> cursed aura</span>
             </h1>
             <p className="mx-auto mt-4 max-w-[320px] text-[15px] leading-relaxed text-silver">
-              Stream Jamendo, decode your device, sing word-perfect karaoke, and command playlists with AI — in one ultra-premium player.
+              Stream free licensed music, decode your device, sing word-perfect karaoke, and command playlists with AI — in one ultra-premium player.
             </p>
             <div className="mt-7 flex flex-col items-center gap-3">
               <motion.button
@@ -183,7 +183,7 @@ export function LandingPage({ onEnter }: { onEnter: () => void }) {
             {BUILD.name} v{BUILD.version} · {BUILD.copyright}
           </p>
           <p className="mt-1 text-[10px] text-silver-dim/70">
-            Streaming by Jamendo under Creative Commons
+            Free licensed music under Creative Commons
           </p>
         </footer>
       </div>
