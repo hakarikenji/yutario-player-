@@ -1,12 +1,12 @@
 package com.hakaristudio.yutarioplayer;
 
 import android.Manifest;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.ContentUris;
 import android.provider.MediaStore;
 import android.provider.Settings;
 
