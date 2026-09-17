@@ -141,6 +141,44 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     };
   }, [favorites, registryPut]);
 
+  /* ── startup device scan (Lark-style) ──
+   * On first native launch, quietly index the phone's whole music library
+   * so "My Device" is populated before the user taps anything. Never
+   * prompts on its own: if audio permission isn't granted yet, this is a
+   * no-op and the explicit button handles the prompt + settings fallback.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await scanDeviceMusic();
+        if (cancelled || rows === null || !rows.length) return;
+        const tracks: Track[] = rows.map((r: DeviceAudioRow): Track => ({
+          id: `loc_${r.id}`,
+          title: r.title,
+          artist: r.artist,
+          album: r.album || "My Device",
+          url: contentToWebUrl(r.uri),
+          artwork: r.artUri ? contentToWebUrl(r.artUri) : undefined,
+          duration: r.durationSec || 0,
+          source: "local",
+          local: true,
+          fileName: `${r.artist} - ${r.title}.audio`,
+          lyrics: null,
+        })).slice(0, 3000);
+        tracks.sort((a, b) => a.artist.localeCompare(b.artist) || a.album.localeCompare(b.album) || a.title.localeCompare(b.title));
+        setLocalTracks((prev) => (prev.length >= tracks.length ? prev : tracks));
+        setLocalFolder((prev) => prev ?? { name: "This Phone", kind: "media-store" });
+      } catch {
+        /* silent — the Connect button is the explicit path */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Run once per session; re-run only if the index is empty on focus.
+  }, []);
+
   useEffect(() => storageSet(PLAYLISTS_KEY, playlists), [playlists]);
   useEffect(() => storageSet(FAVS_KEY, favorites), [favorites]);
   useEffect(() => storageSet(HISTORY_KEY, history.slice(0, 100)), [history]);

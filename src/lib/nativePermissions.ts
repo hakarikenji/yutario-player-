@@ -117,7 +117,12 @@ export async function ensureAudioReadPermission(): Promise<boolean> {
     const check = await native.checkAudio();
     if (check.granted) return true;
     const req = await native.requestAudio();
-    return !!req.granted;
+    if (req.granted) return true;
+    // Denied (possibly permanently) — take the user straight to the app's
+    // system-settings page where they can flip Audio/Storage on, like every
+    // mainstream player does instead of dead-ending on a toast.
+    await openAppSettings();
+    return false;
   } catch {
     // Older APK without the plugin — assume the picker path still works.
     return true;

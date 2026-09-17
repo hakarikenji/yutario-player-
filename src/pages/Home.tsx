@@ -80,15 +80,20 @@ export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
    * music index in one tap — no folder picking. Web falls back to pickers. */
   const connectPhoneFiles = async () => {
     try {
+      const before = library.localTracks.length;
       const ok = await library.indexDeviceAudio();
       if (!ok) {
-        toast("Audio access denied — allow it in the prompt or system settings", "error");
+        // Permission denied — the bridge already deep-linked to app settings;
+        // explain what to flip when they come back.
+        toast("Enable \"Music and audio\" in the app settings, then come back", "info");
         return;
       }
-      if (!library.localTracks.length) {
+      if (library.localTracks.length) {
+        toast(`Connected — ${library.localTracks.length} phone tracks ready`, "success");
+      } else if (before === 0) {
         toast("No music files found on this phone", "info");
       } else {
-        toast(`Connected — ${library.localTracks.length} phone tracks ready`, "success");
+        toast("Library refreshed", "success");
       }
     } catch {
       /* user cancelled */
