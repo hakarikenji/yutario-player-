@@ -16,6 +16,7 @@ import {
 } from "../lib/jamendo";
 import { music } from "../lib/music";
 import { getDemoTracks } from "../lib/demo";
+import { STAFF_PICKS } from "../lib/curated";
 import { usePlayer } from "../state/player";
 import { useSettings } from "../state/settings";
 import { useLibrary } from "../state/library";
@@ -60,9 +61,27 @@ export function JamendoHubPage() {
   const [keyInput, setKeyInput] = useState("");
   const [fetchVersion, setFetchVersion] = useState(0);
   const [health, setHealth] = useState(getJamendoHealth());
+  const [staffTracks, setStaffTracks] = useState<Track[]>([]);
   const searchTimer = useRef<number | null>(null);
 
   useEffect(() => subscribeJamendoHealth(setHealth), []);
+
+  /* Load staff picks on mount */
+  useEffect(() => {
+    let cancelled = false;
+    // Pick 3 random curated artists to feature
+    const picks = [...STAFF_PICKS].sort(() => Math.random() - 0.5).slice(0, 3);
+    Promise.all(
+      picks.map((p) =>
+        music.freeTextSearch(p.artist, { limit: 6, bitrate: settings.bitrate }).catch(() => [])
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const merged = results.flat().slice(0, 12);
+      if (merged.length > 0) setStaffTracks(merged);
+    });
+    return () => { cancelled = true; };
+  }, [settings.bitrate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,7 +198,7 @@ export function JamendoHubPage() {
           <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-aura-400">
             <Sparkles size={11} /> Jamendo Hub
           </p>
-          <h1 className="text-xl font-black tracking-tight text-white">Free music, infinite radio</h1>
+          <h1 className="text-xl font-black tracking-tight text-white">Discover free music</h1>
         </div>
         <button
           onClick={() => setKeySheet(true)}
@@ -224,7 +243,7 @@ export function JamendoHubPage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search 500,000+ free tracks…"
+          placeholder="Search popular free tracks…"
           className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] pl-11 pr-10 text-sm font-medium text-white placeholder:text-silver-dim focus:border-aura-500/50 focus:outline-none focus:ring-2 focus:ring-aura-500/20"
         />
         {searching && <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-aura-400" />}
@@ -252,6 +271,36 @@ export function JamendoHubPage() {
             <Shuffle size={16} /> Radio Mix
           </Button>
         </div>
+      )}
+
+      {/* Staff Picks — curated popular free music */}
+      {!searchResults && staffTracks.length > 0 && (
+        <section className="mb-6">
+          <SectionHeader title="✨ Staff Picks" />
+          <div className="space-y-0.5">
+            {staffTracks.slice(0, 8).map((track, i) => (
+              <TrackRow
+                key={`sp_${track.id}_${i}`}
+                track={track}
+                index={i}
+                playing={player.status.track?.id === track.id}
+                onPlay={() => {
+                  player.setShuffle(false);
+                  player.playTracks(staffTracks, i);
+                }}
+                onFavorite={() => library.toggleFavorite(track.id)}
+                favorite={library.isFavorite(track.id)}
+                onQueue={() => {
+                  player.addToQueue(track);
+                  toast("Added to queue", "success");
+                }}
+                onShare={() => void library.shareTrack(track)}
+                onOpenArtist={openArtist}
+                onOpenAlbum={openAlbum}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Content */}
@@ -342,8 +391,8 @@ export function JamendoHubPage() {
             {activeTracks.length === 0 ? (
               <EmptyState
                 icon={<AlertTriangle size={18} />}
-                title={health.ok === false ? "Catalog reconnecting" : "Channel unavailable"}
-                hint={health.ok === false ? "Streaming continues via Archive.org — try another channel or check your connection." : "Try another channel."}
+                title="No tracks found"
+                hint="Try another channel or check your connection."
               />
             ) : (
               <div className="space-y-0.5">
