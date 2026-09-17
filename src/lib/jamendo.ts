@@ -17,27 +17,36 @@ declare global {
   }
 }
 
-/* ─── Client key management (user-supplied > env-injected > bundled) ───── */
+/* ─── Client key management (operator-provisioned, baked at build time) ──── */
 
 const KEY_STORAGE = "jamendo_client_id";
 
-export function getJamendoClientId(): string {
-  const user = storageGet<string>(KEY_STORAGE, "").trim();
-  if (user) return user;
-  const injected = typeof window !== "undefined" ? window.__YUTARIO_CONFIG__?.jamendoClientId : null;
-  const env = (injected && injected.trim()) || JAMENDO_FALLBACK_CLIENT_ID;
-  return env && env !== "your_client_id" ? env : "";
+// Operator-owned key only — listeners never enter keys. Clear any legacy
+// user-supplied key left over from the removed BYO-key flow.
+try {
+  storageRemove(KEY_STORAGE);
+} catch {
+  /* storage unavailable */
 }
 
-export function setJamendoClientId(id: string): void {
-  const clean = id.trim();
-  if (clean) storageSet(KEY_STORAGE, clean);
-  else storageRemove(KEY_STORAGE);
+export function getJamendoClientId(): string {
+  const injected = typeof window !== "undefined" ? window.__YUTARIO_CONFIG__?.jamendoClientId : null;
+  const env = (injected && injected.trim()) || JAMENDO_FALLBACK_CLIENT_ID;
+  return env && env !== "your_client_id" && env !== "dev-sandbox" ? env : "";
+}
+void KEY_STORAGE;
+
+/*
+ * Key entry is intentionally not supported anymore: keys are provisioned by
+ * Hakari Studio at build time. Kept as no-op stubs so older call sites (if
+ * any linger) keep compiling and behave inertly.
+ */
+export function setJamendoClientId(_id: string): void {
   resetJamendoHealth();
 }
 
 export function hasCustomJamendoKey(): boolean {
-  return !!storageGet<string>(KEY_STORAGE, "").trim();
+  return false;
 }
 
 /* ─── API health (drives the key banner + settings status) ─────────────── */
@@ -153,7 +162,9 @@ async function fetchJson<T>(url: string, allowStale = true): Promise<T> {
           if (json.headers?.status !== "success") {
             const msg = json.headers?.error_message || "Jamendo API error";
             if (json.headers?.code === 5 || /invalid client id/i.test(msg)) {
-              publishHealth({ ok: false, message: "Invalid client id — add yours in Settings → Jamendo API" });
+              publishHealth({ ok: false, message: "Catalog key issue — streaming via Archive.org" });
+            } else if (/suspended/i.test(msg)) {
+              publishHealth({ ok: false, message: "Catalog paused — streaming via Archive.org" });
             }
             throw new Error(msg);
           }

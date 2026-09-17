@@ -35,7 +35,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web assets
+      # Operator keys (Hakari Studio) are injected at build time from repo
+      # secrets — listeners never provide keys. The key rides inside the
+      # built dist/ that cap sync copies into the APK.
+      - name: Bake operator API keys into the web build
+        env:
+          VITE_JAMENDO_CLIENT_ID: ${{ secrets.VITE_JAMENDO_CLIENT_ID }}
         run: bun run build
 
       - name: Setup Java 21 (Capacitor 7 requirement)

@@ -85,6 +85,9 @@ export function SettingsPage() {
   const toast = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
   const [notifState, setNotifState] = useState<"granted" | "denied" | "default" | "unknown">("unknown");
+  // Android reports both "never asked" and "blocked" as denied — only claim
+  // "Blocked" after an actual request attempt failed in this session.
+  const [notifRequested, setNotifRequested] = useState(false);
 
   /* Reflect the real OS notification-permission state (native or web). */
   useEffect(() => {
@@ -327,9 +330,9 @@ export function SettingsPage() {
           sub={
             notifState === "granted"
               ? "Granted — lock-screen media controls active"
-              : notifState === "denied"
+              : notifState === "denied" && notifRequested
                 ? "Blocked — enable in system settings to keep audio alive"
-                : "Media controls & playback toasts"
+                : "Enable for lock-screen media controls & background audio"
           }
           right={
             <Button
@@ -337,18 +340,22 @@ export function SettingsPage() {
               variant={notifState === "granted" ? "ghost" : "outline"}
               onClick={async () => {
                 if (notifState === "granted") return;
+                setNotifRequested(true);
                 const granted = await requestNotificationPermission();
                 update("notifications", granted);
                 setNotifState(granted ? "granted" : "denied");
                 if (granted) {
                   toast("Notifications enabled", "success");
-                } else {
+                } else if (notifState === "denied") {
+                  // A prompt was already answered no — deep-link to settings.
                   toast("Permission blocked — opening app settings", "error");
                   setTimeout(() => void openAppSettings(), 600);
+                } else if (!granted) {
+                  toast("Notifications are off — tap again or enable in system settings", "info");
                 }
               }}
             >
-              {notifState === "granted" ? "Enabled" : notifState === "denied" ? "Open Settings" : "Enable"}
+              {notifState === "granted" ? "Enabled" : notifState === "denied" && notifRequested ? "Open Settings" : "Enable"}
             </Button>
           }
         />
@@ -364,7 +371,7 @@ export function SettingsPage() {
         <Row
           icon={HardDriveDownload}
           label={library.localFolder ? `Indexed: ${library.localFolder.name}` : "Device Music"}
-          sub={library.localTracks.length ? `${library.localTracks.length} tracks · 100% offline` : "No folder indexed yet"}
+          sub={library.localTracks.length ? `${library.localTracks.length} tracks · 100% offline` : "Tap to scan your phone's music"}
           onClick={() => void library.pickLocalFolder()}
         />
         <Row icon={Trash2} label="Clear Streaming Cache" danger onClick={() => { clearJamendoCache(); toast("Streaming cache cleared", "success"); }} />

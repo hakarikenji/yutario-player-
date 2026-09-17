@@ -116,7 +116,7 @@ export interface PlayHistoryEntry {
 
 export interface LocalFolderHandle {
   name: string;
-  kind: "fs-access" | "input";
+  kind: "fs-access" | "input" | "media-store";
   handle?: FileSystemDirectoryHandle;
 }
 

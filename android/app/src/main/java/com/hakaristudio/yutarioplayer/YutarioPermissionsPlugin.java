@@ -3,13 +3,17 @@ package com.hakaristudio.yutarioplayer;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.ContentUris;
+import android.provider.MediaStore;
 import android.provider.Settings;
 
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -130,6 +134,63 @@ public class YutarioPermissionsPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("granted", TIRAMISU_PLUS ? has(Manifest.permission.READ_MEDIA_AUDIO)
                 : has(Manifest.permission.READ_EXTERNAL_STORAGE));
+        call.resolve(ret);
+    }
+
+    /* ── Device music scan (MediaStore) ────────────────────────────────── */
+
+    /**
+     * Scan the phone's music library via MediaStore — no folder picker, no
+     * SAF trees. Every audio file the system indexes as music (≥30s) is
+     * returned with a content:// URI the WebView can stream through
+     * Capacitor's local server (/_capacitor_content_/...).
+     * Requires READ_MEDIA_AUDIO (13+) / READ_EXTERNAL_STORAGE (≤12) —
+     * callers must invoke requestAudio() first.
+     */
+    @PluginMethod
+    public void scanDeviceMusic(PluginCall call) {
+        JSArray rows = new JSArray();
+        String[] projection = {
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.DURATION
+        };
+        String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0 AND "
+                + MediaStore.Audio.Media.DURATION + ">=30000";
+        try (Cursor c = getContext().getContentResolver().query(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                null,
+                MediaStore.Audio.Media.DATE_ADDED + " DESC")) {
+            int max = 3000;
+            while (c != null && c.moveToNext() && rows.length() < max) {
+                long id = c.getLong(0);
+                long albumId = c.getLong(4);
+                String artist = c.getString(2);
+                String album = c.getString(3);
+                JSObject row = new JSObject();
+                row.put("id", String.valueOf(id));
+                row.put("title", c.getString(1) == null ? "Unknown Title" : c.getString(1));
+                row.put("artist", (artist == null || "<unknown>".equals(artist)) ? "Unknown Artist" : artist);
+                row.put("album", album == null ? "" : album);
+                row.put("albumId", albumId);
+                row.put("durationSec", c.getLong(5) / 1000.0);
+                row.put("uri", ContentUris.withAppendedId(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id).toString());
+                row.put("artUri", ContentUris.withAppendedId(
+                        Uri.parse("content://media/external/audio/albumart"), albumId).toString());
+                rows.put(row);
+            }
+        } catch (Exception e) {
+            call.reject("MediaStore scan failed — was audio permission granted?", e);
+            return;
+        }
+        JSObject ret = new JSObject();
+        ret.put("tracks", rows);
         call.resolve(ret);
     }
 

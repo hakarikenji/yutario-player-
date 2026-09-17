@@ -12,8 +12,7 @@ import {
 import { cn } from "../lib/utils";
 import { t } from "../lib/i18n";
 import {
-  getJamendoHealth, subscribeJamendoHealth, setJamendoClientId,
-  getJamendoClientId, hasCustomJamendoKey, clearJamendoCache,
+  getJamendoHealth, subscribeJamendoHealth, getJamendoClientId, clearJamendoCache,
 } from "../lib/jamendo";
 import { music } from "../lib/music";
 import { getDemoTracks } from "../lib/demo";
@@ -164,19 +163,12 @@ export function JamendoHubPage() {
   }, [activeTracks]);
 
   const saveKey = () => {
-    const id = keyInput.trim();
-    if (!id) {
-      setJamendoClientId("");
-      clearJamendoCache();
-      toast("Key cleared — back to app default", "info");
-      setKeySheet(false);
-      setFetchVersion((v) => v + 1);
-      return;
-    }      setJamendoClientId(id);
-      clearJamendoCache();
-      setKeySheet(false);
-      setFetchVersion((v) => v + 1); // retrigger channel fetch
-      toast("Jamendo key saved — reconnecting…", "success");
+    // Keys are provisioned by Hakari Studio at build time — listeners never
+    // enter them. The sheet is a read-only connection status panel now.
+    clearJamendoCache();
+    setKeySheet(false);
+    setFetchVersion((v) => v + 1);
+    toast(getJamendoClientId() ? "Reconnecting with the built-in catalog key…" : "Reconnecting via Archive.org…", "info");
   };
 
   return (
@@ -210,24 +202,20 @@ export function JamendoHubPage() {
         </button>
       </div>
 
-      {/* Key banner when invalid */}
+      {/* Status banner when the built-in Jamendo key can't serve */}
       {health.ok === false && (
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          onClick={() => {
-            setKeyInput(getJamendoClientId());
-            setKeySheet(true);
-          }}
-          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-aura-500/30 bg-aura-500/[0.08] px-4 py-3 text-left transition-colors hover:bg-aura-500/[0.14]"
+          className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left"
         >
-          <KeyRound size={18} className="shrink-0 text-aura-400" />
+          <KeyRound size={18} className="shrink-0 text-silver" />
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-white">Connect your Jamendo API key</span>
-            <span className="block text-xs text-silver">Free at developer.jamendo.com — takes 30 seconds</span>
+            <span className="block text-sm font-bold text-white">Jamendo catalog paused</span>
+            <span className="block text-xs text-silver">Streaming continues via Archive.org originals — nothing for you to set up.</span>
           </span>
-          <ArrowRight size={15} className="shrink-0 text-aura-400" />
-        </motion.button>
+          <ArrowRight size={15} className="shrink-0 text-silver-dim" />
+        </motion.div>
       )}
 
       {/* Search */}
@@ -354,8 +342,8 @@ export function JamendoHubPage() {
             {activeTracks.length === 0 ? (
               <EmptyState
                 icon={<AlertTriangle size={18} />}
-                title={health.ok === false ? "API key not connected" : "Channel unavailable"}
-                hint={health.ok === false ? "Add your free Jamendo client id to stream the live catalog." : "Try another channel."}
+                title={health.ok === false ? "Catalog reconnecting" : "Channel unavailable"}
+                hint={health.ok === false ? "Streaming continues via Archive.org — try another channel or check your connection." : "Try another channel."}
               />
             ) : (
               <div className="space-y-0.5">
@@ -414,8 +402,8 @@ export function JamendoHubPage() {
 
       <DetailSheet detail={detail} onClose={() => setDetail(null)} actions={detailActions} />
 
-      {/* Key management sheet */}
-      <Sheet open={keySheet} onClose={() => setKeySheet(false)} title="Jamendo API Key">
+      {/* Connection status sheet (read-only — keys are operator-managed) */}
+      <Sheet open={keySheet} onClose={() => setKeySheet(false)} title="Music Sources">
         <KeySheetBody
           value={keyInput}
           onValue={setKeyInput}
@@ -428,8 +416,6 @@ export function JamendoHubPage() {
 }
 
 function KeySheetBody({
-  value,
-  onValue,
   onSave,
   onCancel,
 }: {
@@ -438,60 +424,42 @@ function KeySheetBody({
   onSave: () => void;
   onCancel: () => void;
 }) {
-  const custom = hasCustomJamendoKey();
   const current = getJamendoClientId();
   return (
     <div className="space-y-4 pb-2">
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
-        <p className="text-sm font-bold text-white">Bring your own free key</p>
+        <p className="text-sm font-bold text-white">Catalogs are managed for you</p>
         <p className="mt-1 text-xs leading-relaxed text-silver">
-          Jamendo streams 500,000+ Creative Commons tracks for free — you just need a personal client id.
-          Create one at{" "}
-          <a href="https://devportal.jamendo.com" target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-0.5 font-semibold text-aura-400 hover:text-aura-300">
-            devportal.jamendo.com <ExternalLink size={10} />
-          </a>
-          , then paste it below. It's stored only on this device.
+          Yutario connects to Jamendo and Archive.org with keys provisioned by
+          Hakari Studio — there is nothing to sign up for or paste. If a
+          catalog is ever paused, the app streams from the remaining sources
+          automatically.
         </p>
       </div>
-      <div className="relative">
-        <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-silver-dim" />
-        <input
-          value={value}
-          onChange={(e) => onValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSave()}
-          placeholder="e.g. 8f2a91c0"
-          className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.05] pl-11 pr-4 text-sm font-medium text-white placeholder:text-silver-dim focus:border-aura-500/50 focus:outline-none focus:ring-2 focus:ring-aura-500/20"
-        />
-      </div>
-      <div className="flex items-center justify-between text-[11px] text-silver-dim">
-        <span>
-          Status:{" "}
-          {custom ? (
-            <span className="font-semibold text-emerald-300">Custom key active</span>
-          ) : current ? (
-            <span className="font-semibold text-aura-300">Bundled key</span>
-          ) : (
-            <span className="font-semibold text-red-300">No key — demo vault only</span>
-          )}
-        </span>
-        {custom && (
-          <button
-            onClick={() => {
-              onValue("");
-              onSave();
-            }}
-            className="font-semibold text-red-300 hover:text-red-200"
-          >
-            Remove key
-          </button>
+      <div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
+        <div>
+          <p className="text-sm font-bold text-white">Jamendo</p>
+          <p className="text-[11px] text-silver">500,000+ Creative Commons originals</p>
+        </div>
+        {current ? (
+          <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black tracking-wider text-emerald-300">CONNECTED</span>
+        ) : (
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black tracking-wider text-silver">STANDBY</span>
         )}
+      </div>
+      <div className="flex items-center justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">
+        <div>
+          <p className="text-sm font-bold text-white">Archive.org Netlabels</p>
+          <p className="text-[11px] text-silver">Original netlabel releases, CC-licensed</p>
+        </div>
+        <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-black tracking-wider text-emerald-300">CONNECTED</span>
       </div>
       <div className="flex gap-2">
         <Button variant="ghost" className="flex-1" onClick={onCancel}>
-          Cancel
+          Close
         </Button>
         <Button className="flex-1" onClick={onSave}>
-          <CheckCircle2 size={15} /> Save & Connect
+          <CheckCircle2 size={15} /> Reconnect
         </Button>
       </div>
     </div>

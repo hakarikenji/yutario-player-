@@ -11,8 +11,13 @@ export const BUILD = {
   copyright: `© ${new Date().getFullYear()} Hakari Studio. All rights reserved.`,
 } as const;
 
-/** Jamendo — replaceable at runtime via VITE_JAMENDO_CLIENT_ID (see scripts/dev.mjs). */
-export const JAMENDO_FALLBACK_CLIENT_ID = "your_client_id";
+/**
+ * Jamendo client id — provisioned by Hakari Studio (the app operator), never
+ * by listeners. Injected at build time from VITE_JAMENDO_CLIENT_ID (scripts/
+ * inject-keys.mjs bakes it into index.html for both the web deploy and the
+ * Android APK). Listeners never see or manage keys.
+ */
+export const JAMENDO_FALLBACK_CLIENT_ID = "";
 
 export const JAMENDO_BASE = "https://api.jamendo.com/v3.0";
 

@@ -5,7 +5,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/inject-keys.mjs",
     "dev": "node scripts/dev.mjs",
+    "prebuild": "node scripts/inject-keys.mjs",
     "build": "vite build",
     "start": "node scripts/preview.mjs",
     "preview": "node scripts/preview.mjs",

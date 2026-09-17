@@ -10,7 +10,17 @@ import { storageGet, storageSet } from "../lib/storage";
 import { readAudioMetadata, fileToTrack, probeDuration } from "../lib/id3";
 import { music } from "../lib/music";
 import { uid } from "../lib/utils";
-import { ensureAudioReadPermission } from "../lib/nativePermissions";
+import { ensureAudioReadPermission, scanDeviceMusic, type DeviceAudioRow } from "../lib/nativePermissions";
+
+/**
+ * Map a content:// media URI to a same-origin WebView URL served by
+ * Capacitor's local server (AndroidProtocolHandler.openContentUrl).
+ * Same-origin means <audio> AND the Web Audio graph (EQ, karaoke,
+ * visualizer) can process phone files without any CORS special-casing.
+ */
+function contentToWebUrl(uri: string): string {
+  return `/_capacitor_content_/${uri.replace(/^content:\/\//, "")}`;
+}
 
 const PLAYLISTS_KEY = "playlists";
 const FAVS_KEY = "favorites";
@@ -23,6 +33,8 @@ interface LibraryContextValue {
   indexProgress: { done: number; total: number };
   localFolder: LocalFolderHandle | null;
   pickLocalFolder: () => Promise<void>;
+  /** One-tap native MediaStore scan of the phone's music. False → use picker. */
+  indexDeviceAudio: () => Promise<boolean>;
   clearLocal: () => void;
 
   playlists: Playlist[];
@@ -165,10 +177,68 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setIndexing(false);
   }, []);
 
+  /**
+   * Native path: scan the phone's entire MediaStore music index in one tap —
+   * no folder picking, no SAF trees. Rows arrive with content:// URIs that
+   * stream through Capacitor's local server and play through the full
+   * Web Audio pipeline. Returns null on web / old APKs (caller falls back).
+   */
+  const indexDeviceAudio = useCallback(async (): Promise<boolean> => {
+    let ok = true;
+    try {
+      ok = await ensureAudioReadPermission();
+    } catch {
+      ok = true; // old build — try the scan anyway
+    }
+    if (!ok) return false; // user denied audio access
+    const rows = await scanDeviceMusic();
+    if (rows === null) return false; // no native scanner → picker fallback
+    if (!rows.length) {
+      // Permission granted but MediaStore has no music (rare) — let the
+      // caller decide; treat as success so we don't open a pointless picker.
+      setLocalFolder({ name: "This Phone", kind: "media-store" });
+      setLocalTracks([]);
+      return true;
+    }
+    setIndexing(true);
+    setIndexProgress({ done: 0, total: rows.length });
+    const tracks: Track[] = rows.map((r: DeviceAudioRow): Track => ({
+      id: `loc_${r.id}`,
+      title: r.title,
+      artist: r.artist,
+      album: r.album || "My Device",
+      url: contentToWebUrl(r.uri),
+      artwork: r.artUri ? contentToWebUrl(r.artUri) : undefined,
+      duration: r.durationSec || 0,
+      source: "local",
+      local: true,
+      fileName: `${r.artist} - ${r.title}.audio`,
+      lyrics: null,
+    })).slice(0, 3000);
+    // Report progress in coarse batches (the scan itself is instant).
+    for (let d = Math.min(200, tracks.length); d <= tracks.length; d += Math.max(200, Math.ceil(tracks.length / 8))) {
+      setIndexProgress({ done: Math.min(d, tracks.length), total: tracks.length });
+    }
+    tracks.sort((a, b) => a.artist.localeCompare(b.artist) || a.album.localeCompare(b.album) || a.title.localeCompare(b.title));
+    setLocalTracks((prev) => {
+      // Native scans replace previous native results (dedupe by id), but keep
+      // any tracks the user indexed manually via the picker.
+      const manual = prev.filter((t) => !t.id.startsWith("loc_") || !tracks.some((n) => n.id === t.id));
+      return [...manual.filter((t) => !tracks.some((n) => n.id === t.id)), ...tracks];
+    });
+    setLocalFolder({ name: "This Phone", kind: "media-store" });
+    setIndexing(false);
+    return true;
+  }, []);
+
   const pickLocalFolder = useCallback(async () => {
-    // Android: surface the READ_MEDIA_AUDIO / READ_EXTERNAL_STORAGE prompt
-    // before the picker opens so the scan actually finds the phone's files.
-    // Web: a no-op (pickers manage their own access).
+    // Android: scan the phone's whole MediaStore music library in one tap.
+    // Falls back to the folder/file picker on web or old APKs.
+    try {
+      if (await indexDeviceAudio()) return;
+    } catch {
+      /* fall through to the picker */
+    }
     try {
       const ok = await ensureAudioReadPermission();
       if (!ok) return; // user denied — don't open a picker that can't see files
@@ -353,6 +423,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       indexProgress,
       localFolder,
       pickLocalFolder,
+      indexDeviceAudio,
       clearLocal,
       playlists,
       createPlaylist,
@@ -377,7 +448,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       setBitrate,
     }),
     [
-      localTracks, indexing, indexProgress, localFolder, pickLocalFolder, clearLocal,
+      localTracks, indexing, indexProgress, localFolder, pickLocalFolder, indexDeviceAudio, clearLocal,
       playlists, createPlaylist, deletePlaylist, renamePlaylist, addToPlaylist, removeFromPlaylist, getPlaylist,
       favorites, toggleFavorite, isFavorite, history, recordPlay, clearHistory,
       localAlbums, localArtists, findLocalByAlbum, findLocalByArtist, shareTrack,

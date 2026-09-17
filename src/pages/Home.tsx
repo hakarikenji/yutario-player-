@@ -19,7 +19,7 @@ import { useLibrary } from "../state/library";
 import { PageContainer, HomeBannerAd } from "../ui/layout";
 import { Artwork } from "../ui/shared";
 import { Sheet, Button, useToast } from "../ui/primitives";
-import { ensureAudioReadPermission, requestNotificationPermission } from "../lib/nativePermissions";
+import { requestNotificationPermission } from "../lib/nativePermissions";
 import type { Track } from "../lib/types";
 
 export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
@@ -76,18 +76,22 @@ export function HomePage({ onOpenDevice }: { onOpenDevice?: () => void }) {
   };
 
   /* Connect the app to the phone's music files: ask for the audio permission
-   * first (Android 13+ READ_MEDIA_AUDIO prompt), then open the folder/file
-   * picker and index everything found. */
+   * (Android 13+ READ_MEDIA_AUDIO prompt), then scan the whole MediaStore
+   * music index in one tap — no folder picking. Web falls back to pickers. */
   const connectPhoneFiles = async () => {
     try {
-      const ok = await ensureAudioReadPermission();
+      const ok = await library.indexDeviceAudio();
       if (!ok) {
-        toast("Audio access denied — allow it to scan your music", "error");
+        toast("Audio access denied — allow it in the prompt or system settings", "error");
         return;
       }
-      await library.pickLocalFolder();
+      if (!library.localTracks.length) {
+        toast("No music files found on this phone", "info");
+      } else {
+        toast(`Connected — ${library.localTracks.length} phone tracks ready`, "success");
+      }
     } catch {
-      /* user cancelled the picker */
+      /* user cancelled */
     }
   };
 
