@@ -161,6 +161,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [player]);
 
+  const handleAuthDone = useCallback(() => navigate("app"), [navigate]);
+
   const openKaraoke = useCallback(() => {
     setNowPlaying(false);
     setTab("karaoke");
@@ -179,7 +181,7 @@ export default function App() {
 
         {route === "auth" && (
           <motion.div key="auth" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <AuthPage onDone={() => navigate("app")} />
+            <AuthPage onDone={handleAuthDone} />
           </motion.div>
         )}
 

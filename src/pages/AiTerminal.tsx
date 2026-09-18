@@ -104,7 +104,7 @@ export function AiTerminalPage() {
       role: "yutario",
       text: hasGeminiKey()
         ? "YUTARIO AI v2.0 online.\nGemini brain + your library. Tell me a mood — I'll build the mix from your phone's music and the free catalog."
-        : "YUTARIO AI — Offline mode.\nDescribe a vibe and I'll match it from your library + the free catalog.\n\nFor full conversations, connect the Gemini brain above.",
+        : "YUTARIO AI — Ready.\nDescribe a mood and I'll match it from the free catalog + your device library.\n\nFor full conversations, connect the Gemini brain above.",
       at: Date.now(),
     },
   ]);
@@ -147,10 +147,16 @@ export function AiTerminalPage() {
     const { advice, usedBrain } = await askBrain(text);
     const intent = parseIntent(text); // offline fallback always computed
 
-    /* 1. Catalog tracks — Gemini queries when connected, tag intent otherwise. */
+    /* 1. Catalog tracks — Gemini queries when connected, tag intent otherwise,
+       with broad fallback queries that always hit the real catalog. */
     let resultTracks: Track[] = [];
     const queries = advice?.queries.length ? advice.queries : intent.tags.length ? [intent.tags.join("+")] : [];
-    for (const q of queries.slice(0, 2)) {
+
+    // Always run at least one real catalog search — broad fallback for empty queries.
+    const searchQueries = queries.length
+      ? queries.slice(0, 2)
+      : [text.trim().slice(0, 60) || (intent.speed === "high" ? "energetic" : intent.speed === "low" ? "chill" : "electronic popular")];
+    for (const q of searchQueries) {
       try {
         const found = await music.searchTracks(q, { limit: 12, bitrate: settings.bitrate });
         resultTracks = [...resultTracks, ...found];
@@ -167,6 +173,15 @@ export function AiTerminalPage() {
       }
     }
 
+    // Second chance: if catalog search returned nothing, try trending as ultimate fallback.
+    if (!resultTracks.length) {
+      try {
+        resultTracks = await music.trending({ limit: 12, bitrate: settings.bitrate });
+      } catch {
+        /* non-fatal */
+      }
+    }
+
     /* 2. The user's own library — matched by Gemini's words or the raw prompt. */
     const matchWords = (advice?.localMatch.length ? advice.localMatch : [...intent.tags, ...text.toLowerCase().split(/\s+/).filter((w) => w.length > 3)]).slice(0, 6);
     const localMatches = library.localTracks.filter((tr) => {
@@ -175,12 +190,9 @@ export function AiTerminalPage() {
     });
     resultTracks = [...localMatches, ...resultTracks];
 
+    // Only use demo tracks if EVERYTHING failed — no catalog, no library.
     if (!resultTracks.length) {
-      const pool = getDemoTracks();
-      resultTracks =
-        intent.speed === "high" ? pool.filter((t) => t.genres?.includes("energetic")).concat(pool) :
-        intent.speed === "low" ? pool.filter((t) => t.genres?.includes("chill")).concat(pool) :
-        pool;
+      resultTracks = getDemoTracks();
     }
     resultTracks = resultTracks.filter((t, i, a) => a.findIndex((x) => x.id === t.id) === i).slice(0, 12);
     await new Promise((r) => setTimeout(r, 300));
@@ -192,8 +204,8 @@ export function AiTerminalPage() {
     const brainLine = usedBrain
       ? `${advice!.reply}\n\nMix built from ${localMatches.length ? `${localMatches.length} of your tracks + ` : ""}${resultTracks.length - localMatches.length} catalog matches.`
       : getGeminiStatus() === "not_configured"
-        ? `Offline match for \"${vibe}\" — ${resultTracks.length} tracks${localMatches.length ? ` (${localMatches.length} from your device)` : ""}.\n\n\u2191 Connect Gemini above for real conversations and smart playlists.`
-        : `${t("ai_sorry")}\n\nOffline match: ${resultTracks.length} tracks.`;
+        ? `\u2728 Vibe matched: \"${vibe}\" — ${resultTracks.length} tracks from the catalog${localMatches.length ? ` + ${localMatches.length} from your device` : ""}.\n\n\u2191 Connect Gemini above for full conversations and smart playlists.`
+        : `\u2728 Vibe matched: \"${vibe}\" — ${resultTracks.length} tracks${localMatches.length ? ` (${localMatches.length} from your device)` : ""}.`;
 
     const reply: AiMessage = {
       id: uid("m"),

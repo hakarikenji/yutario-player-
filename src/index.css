@@ -94,6 +94,151 @@ input[type="range"] {
 }
 
 /* Reduced-motion respect */
+/* ─── Light mode overrides ────────────────────────────────────────────
+ * When darkMode is OFF (no .dark class on <html>), override hardcoded
+ * dark backgrounds/text to light values. Aura/purple accents stay.
+ * Specificity: .dark-body (0,1,0) wins over element selectors (0,0,1).
+ */
+.dark-body {
+  background: #f5f5f7 !important;
+  color: #1a1a2e !important;
+}
+.dark-body .bg-ink,
+.dark-body .bg-ink\/60,
+.dark-body .bg-ink\/80,
+.dark-body .bg-ink\/40,
+.dark-body .bg-ink-100\/85,
+.dark-body .bg-ink-200\/95,
+.dark-body .bg-ink-200\/90,
+.dark-body .bg-ink-200\/80,
+.dark-body .bg-ink-200,
+.dark-body .bg-ink-300\/90,
+.dark-body .bg-ink-300,
+.dark-body .bg-ink-400,
+.dark-body .bg-ink-500 {
+  background-color: #ffffff !important;
+}
+.dark-body .text-white,
+.dark-body [class*="text-white"],
+.dark-body .text-silver,
+.dark-body .text-silver-dim,
+.dark-body .text-silver-bright,
+.dark-body .text-aura-200,
+.dark-body .text-aura-300,
+.dark-body .text-aura-400,
+.dark-body .text-emerald-200,
+.dark-body .text-emerald-300,
+.dark-body .text-red-200,
+.dark-body .text-red-300,
+.dark-body .text-fuchsia-300 {
+  color: #1a1a2e !important;
+}
+.dark-body .bg-ink:not(.bg-aura-btn):not([class*="bg-aura"]):not([class*="bg-gradient"]),
+.dark-body div.bg-ink,
+.dark-body section.bg-ink,
+.dark-body nav.bg-ink {
+  background-color: #f5f5f7 !important;
+}
+.dark-body nav {
+  background-color: rgba(245,245,247,0.92) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+.dark-body .bg-white\/\[0\.05\],
+.dark-body .bg-white\/\[0\.03\],
+.dark-body .bg-white\/\[0\.04\],
+.dark-body .bg-white\/\[0\.06\] {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+.dark-body input[type="email"],
+.dark-body input[type="text"],
+.dark-body input[placeholder],
+.dark-body input.h-14 {
+  background-color: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #1a1a2e !important;
+}
+.dark-body input::placeholder {
+  color: #888 !important;
+}
+.dark-body .bg-white\/10,
+.dark-body .bg-white\/\[0\.10\],
+.dark-body .bg-white\/\[0\.12\] {
+  background-color: rgba(0,0,0,0.08) !important;
+}
+.dark-body button.bg-white\/10,
+.dark-body .hover\:bg-white\/\[0\.12\]:hover {
+  background-color: rgba(0,0,0,0.1) !important;
+}
+.dark-body [class*="border-white"] {
+  border-color: rgba(0,0,0,0.1) !important;
+}
+.dark-body [class*="border-b"] {
+  border-color: rgba(0,0,0,0.06) !important;
+}
+.dark-body [class*="border-t"] {
+  border-color: rgba(0,0,0,0.06) !important;
+}
+.dark-body [class*="shadow-aura-lg"] {
+  box-shadow: 0 0 36px 2px rgba(168,85,247,0.15) !important;
+}
+.dark-body [class*="shadow-aura"] {
+  box-shadow-shadow: 0 0 16px 0 rgba(168,85,247,0.25) !important;
+}
+.dark-body .bg-gradient-to-r.from-aura-900\/40,
+.dark-body [class*="from-aura-900"] {
+  background-color: rgba(245,245,247,1) !important;
+}
+.dark-body .bg-aura-radial {
+  background-image: radial-gradient(1200px 500px at 50% -10%, rgba(147,51,234,0.10), rgba(245,245,247,0) 60%) !important;
+}
+.dark-body .placeholder\:text-silver-dim::placeholder,
+.dark-body input::placeholder {
+  color: #999 !important;
+}
+.dark-body .bg-red-500\/15 {
+  background-color: rgba(239,68,68,0.08) !important;
+}
+.dark-body .text-red-300 {
+  color: #dc2626 !important;
+}
+.dark-body .text-aura-400,
+.dark-body .text-aura-300 {
+  color: #7c3aed !important;
+}
+.dark-body .bg-aura-500\/15,
+.dark-body .bg-aura-500\/\[0\.15\],
+.dark-body .bg-aura-500\/\[0\.10\],
+.dark-body .bg-aura-500\/\[0\.07\],
+.dark-body .bg-aura-500\/\[0\.08\],
+.dark-body .bg-aura-500\/10,
+.dark-body [class*="bg-aura-500/"] {
+  background-color: rgba(168,85,247,0.08) !important;
+}
+.dark-body .border-aura-500\/\[0\.06\],
+.dark-body .border-aura-500\/\[0\.15\],
+.dark-body .border-aura-500\/\[0\.25\],
+.dark-body .border-aura-500\/\[0\.20\],
+.dark-body .border-aura-500\/\[0\.45\],
+.dark-body [class*="border-aura-500/"] {
+  border-color: rgba(168,85,247,0.2) !important;
+}
+.dark-body .bg-emerald-400\/10,
+.dark-body .bg-emerald-500\/15,
+.dark-body .bg-emerald-500\/\[0\.06\],
+.dark-body .bg-emerald-500\/\[0\.15\] {
+  background-color: rgba(16,185,129,0.08) !important;
+}
+.dark-body .text-emerald-300 {
+  color: #059669 !important;
+}
+.dark-body .bg-black\/70,
+.dark-body .bg-black\/85 {
+  background-color: rgba(0,0,0,0.5) !important;
+}
+.dark-body [class*="from-ink"] {
+  background-image: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -148,7 +148,7 @@ export function SettingsPage() {
               icon={auth.isGuest ? User : Mail}
               label={auth.isGuest ? "Upgrade to full account" : "Account synced"}
               sub={auth.isGuest ? "Keep your library with email sign-in" : "Your playlists and history persist on device"}
-              onClick={auth.isGuest ? () => (window.location.hash = "#/auth") : undefined}
+              onClick={auth.isGuest ? () => { auth.signOut(); window.location.hash = "#/auth"; } : undefined}
             />
             <Row icon={LogOut} label={t("sign_out")} danger onClick={() => { auth.signOut(); toast("Signed out", "success"); window.location.hash = "/"; }} />
           </>

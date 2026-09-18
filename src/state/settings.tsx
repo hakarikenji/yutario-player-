@@ -50,19 +50,24 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>(() => ({
-    ...DEFAULT_SETTINGS,
-    ...storageGet<Partial<AppSettings>>(KEY, {}),
-  }));
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const merged = { ...DEFAULT_SETTINGS, ...storageGet<Partial<AppSettings>>(KEY, {}) };
+    // Sync body class immediately to prevent flash on load.
+    document.documentElement.classList.toggle("dark", merged.darkMode);
+    document.body.classList.toggle("dark-body", !merged.darkMode);
+    return merged;
+  });
 
   // Push language + engine params on mount and on change.
   useEffect(() => {
     setLanguage(settings.language);
   }, [settings.language]);
 
-  // Sync dark mode to the <html> class — Tailwind uses `darkMode: ["class"]`.
+  // Sync dark mode to the <html> and <body> classes.
+  // Tailwind uses `darkMode: ["class"]`; light-mode CSS targets `body.dark-body`.
   useEffect(() => {
     document.documentElement.classList.toggle("dark", settings.darkMode);
+    document.body.classList.toggle("dark-body", !settings.darkMode);
   }, [settings.darkMode]);
 
   useEffect(() => {

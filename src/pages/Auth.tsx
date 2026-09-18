@@ -33,8 +33,11 @@ export function AuthPage({ onDone }: { onDone: () => void }) {
     if (mode === "code") inputsRef.current[0]?.focus();
   }, [mode]);
 
+  // Redirect after successful login (not on initial mount when user already exists).
+  const prevUserRef = useRef(auth.user);
   useEffect(() => {
-    if (auth.user) onDone();
+    if (auth.user && !prevUserRef.current) onDone();
+    prevUserRef.current = auth.user;
   }, [auth.user, onDone]);
 
   const submitEmail = async () => {
