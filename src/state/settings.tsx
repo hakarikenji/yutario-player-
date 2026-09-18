@@ -60,6 +60,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setLanguage(settings.language);
   }, [settings.language]);
 
+  // Sync dark mode to the <html> class — Tailwind uses `darkMode: ["class"]`.
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", settings.darkMode);
+  }, [settings.darkMode]);
+
   useEffect(() => {
     audioEngine.setVolume(settings.volume);
     audioEngine.setMuted(settings.muted);

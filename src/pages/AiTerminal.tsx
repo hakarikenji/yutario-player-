@@ -102,7 +102,9 @@ export function AiTerminalPage() {
     {
       id: uid("m"),
       role: "yutario",
-      text: "YUTARIO AI v2.0 online.\nGemini brain + your library. Tell me a mood — I'll build the mix from your phone's music and the free catalog. Free tier: 3 sessions.",
+      text: hasGeminiKey()
+        ? "YUTARIO AI v2.0 online.\nGemini brain + your library. Tell me a mood — I'll build the mix from your phone's music and the free catalog."
+        : "YUTARIO AI — Offline mode.\nDescribe a vibe and I'll match it from your library + the free catalog.\n\nFor full conversations, connect the Gemini brain above.",
       at: Date.now(),
     },
   ]);
@@ -190,8 +192,8 @@ export function AiTerminalPage() {
     const brainLine = usedBrain
       ? `${advice!.reply}\n\nMix built from ${localMatches.length ? `${localMatches.length} of your tracks + ` : ""}${resultTracks.length - localMatches.length} catalog matches.`
       : getGeminiStatus() === "not_configured"
-        ? `Offline match for “${vibe}” — ${resultTracks.length} tracks${localMatches.length ? ` (${localMatches.length} yours)` : ""}. Connect the AI brain above for real conversations.`
-        : `${t("ai_sorry")}\nOffline match: ${resultTracks.length} tracks.`;
+        ? `Offline match for \"${vibe}\" — ${resultTracks.length} tracks${localMatches.length ? ` (${localMatches.length} from your device)` : ""}.\n\n\u2191 Connect Gemini above for real conversations and smart playlists.`
+        : `${t("ai_sorry")}\n\nOffline match: ${resultTracks.length} tracks.`;
 
     const reply: AiMessage = {
       id: uid("m"),
