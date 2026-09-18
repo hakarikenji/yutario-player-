@@ -20,15 +20,17 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const htmlPath = path.join(root, "index.html");
 
 const jamendoId = (process.env.VITE_JAMENDO_CLIENT_ID || "").trim();
+const geminiKey = (process.env.VITE_GEMINI_API_KEY || "").trim();
+
+let html = fs.readFileSync(htmlPath, "utf8");
 
 if (jamendoId) {
-  const html = fs.readFileSync(htmlPath, "utf8");
   const next = html.replace(
     /(window\.__YUTARIO_CONFIG__\s*=\s*\{\s*jamendoClientId:\s*")[^"]*(")/,
     `$1${jamendoId}$2`
   );
   if (next !== html) {
-    fs.writeFileSync(htmlPath, next, "utf8");
+    html = next;
     console.log("[yutario] Operator Jamendo client id baked into index.html ✔");
   } else if (!/jamendoClientId:\s*"[^"]+"/.test(html) || /dev-sandbox/.test(html)) {
     console.warn("[yutario] VITE_JAMENDO_CLIENT_ID set but index.html has no placeholder to replace.");
@@ -38,3 +40,22 @@ if (jamendoId) {
 } else {
   console.log("[yutario] No VITE_JAMENDO_CLIENT_ID set — shipping keyless (Archive provider serves).");
 }
+
+if (geminiKey) {
+  const next = html.replace(
+    /(window\.__YUTARIO_CONFIG__\s*=\s*\{[^}]*geminiApiKey:\s*")[^"]*(")/,
+    `$1${geminiKey}$2`
+  );
+  if (next !== html) {
+    html = next;
+    console.log("[yutario] Operator Gemini API key baked into index.html ✔");
+  } else if (!/geminiApiKey:\s*"[^"]+"/.test(html)) {
+    console.warn("[yutario] VITE_GEMINI_API_KEY set but index.html has no geminiApiKey placeholder.");
+  } else {
+    console.log("[yutario] Gemini API key already baked — skipping.");
+  }
+} else {
+  console.log("[yutario] No VITE_GEMINI_API_KEY set — Yutario AI runs in offline intent mode.");
+}
+
+fs.writeFileSync(htmlPath, html, "utf8");

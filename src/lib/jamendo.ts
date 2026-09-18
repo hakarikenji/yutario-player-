@@ -10,6 +10,7 @@ import { storageGet, storageSet, storageRemove } from "./storage";
 
 interface AppConfigShape {
   jamendoClientId?: string;
+  geminiApiKey?: string;
 }
 declare global {
   interface Window {

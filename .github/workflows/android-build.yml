@@ -41,6 +41,7 @@ jobs:
       - name: Bake operator API keys into the web build
         env:
           VITE_JAMENDO_CLIENT_ID: ${{ secrets.VITE_JAMENDO_CLIENT_ID }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
         run: bun run build
 
       - name: Setup Java 21 (Capacitor 7 requirement)
