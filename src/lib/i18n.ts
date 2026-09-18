@@ -16,6 +16,25 @@ export const LANGUAGES: { key: LangKey; label: string; flag: string; rtl?: boole
   { key: "fr", label: "Français", flag: "🇫🇷" },
 ];
 
+// ── Yutario AI / Gemini brain keys — spread into every dictionary ─────────
+export const aiExtras = {
+  ai_brain: "Yutario AI Brain",
+  ai_brain_sub: "Google Gemini — mood chats & smart picks from your library",
+  ai_connect: "Connect",
+  ai_connected: "Connected",
+  ai_checking: "Checking…",
+  ai_offline: "Offline mode",
+  ai_offline_sub: "Works without Gemini — basic mood matching only",
+  ai_step1: "Create a free API key at aistudio.google.com",
+  ai_step2: "Copy the key starting with AIza…",
+  ai_step3: "Add it as VITE_GEMINI_API_KEY in your Keys/API keys tab, then rebuild",
+  ai_verify: "Verify connection",
+  ai_librarian: "Reads your library",
+  ai_librarian_sub: "Suggestions come from your device music + the free catalog",
+  ai_ad_gate: "Every 3 deep sessions unlock with a short ad — thanks for supporting the studio",
+  ai_sorry: "Signal lost mid-thought — here's a mood match instead.",
+} as const;
+
 const en = {
   nav_home: "Home",
   nav_karaoke: "Karaoke",
@@ -87,6 +106,7 @@ const en = {
   crossfade: "Crossfade",
   gapless: "Gapless Playback",
   autoplay_related: "Autoplay Related",
+  ...aiExtras,
 } as const;
 
 export type Dict = typeof en;
@@ -163,6 +183,21 @@ const ar: PartialDict = {
   crossfade: "الدمج",
   gapless: "تشغيل متصل",
   autoplay_related: "تشغيل تلقائي للأشبه",
+  ai_brain: "عقل يوتاريو الذكي",
+  ai_brain_sub: "Google Gemini — محادثات المزاج واقتراحات من مكتبتك",
+  ai_connect: "ربط",
+  ai_connected: "متصل",
+  ai_checking: "جارٍ التحقق…",
+  ai_offline: "وضع بدون إنترنت",
+  ai_offline_sub: "يعمل بدون Gemini — مطابقة مزاج أساسية فقط",
+  ai_step1: "أنشئ مفتاح API مجاني من aistudio.google.com",
+  ai_step2: "انسخ المفتاح الذي يبدأ بـ AIza…",
+  ai_step3: "أضفه باسم VITE_GEMINI_API_KEY في تبويب المفاتيح ثم أعد البناء",
+  ai_verify: "تحقق من الاتصال",
+  ai_librarian: "يقرأ مكتبتك",
+  ai_librarian_sub: "الاقتراحات تأتي من موسيقى جهازك + الكتالوج المجاني",
+  ai_ad_gate: "كل ٣ جلسات عميقة تُفتح بإعلان قصير — شكراً لدعمك الاستوديو",
+  ai_sorry: "انقطع الاتصال بالعقل — إليك مطابقة مزاج بدلاً منه.",
 };
 
 const es: PartialDict = {
